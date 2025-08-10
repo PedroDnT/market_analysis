@@ -544,9 +544,6 @@ if __name__ == "__main__":
     print("-" * 70)
     for symbol, data in results.items():
         har_sigma = f"{data['sigma_ann_har']:.1%}" if data['sigma_ann_har'] else "N/A"
-        har_sl = f"${data['strategies']['HAR_trend']['SL']:.0f}" if 'HAR_trend' in data['strategies'] else "N/A"
-        har_tp = f"${data['strategies']['HAR_trend']['TP']:.0f}" if 'HAR_trend' in data['strategies'] else "N/A"
-        print(f"{symbol:<12} ${data['entry_price']:<9.0f} {har_sigma:<10} {data['atr']:<7.0f} {har_sl:<8} {har_tp:<8}")
         blend_sl = f"${data['strategies']['VOL_BLEND']['SL']:.0f}" if 'VOL_BLEND' in data['strategies'] else "N/A"
         blend_tp = f"${data['strategies']['VOL_BLEND']['TP']:.0f}" if 'VOL_BLEND' in data['strategies'] else "N/A"
         print(f"{symbol:<12} ${data['entry_price']:<9.0f} {har_sigma:<10} {data['atr']:<7.0f} {blend_sl:<8} {blend_tp:<8}")
