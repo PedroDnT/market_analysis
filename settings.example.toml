@@ -1,0 +1,8 @@
+# Example only. Do NOT commit real keys.
+[bybit]
+api_key = "YOUR_KEY"
+api_secret = "YOUR_SECRET"
+
+[binance]
+api_key = "YOUR_KEY"
+api_secret = "YOUR_SECRET"
