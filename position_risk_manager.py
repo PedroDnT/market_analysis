@@ -63,7 +63,7 @@ class PositionRiskManager:
         return self.positions
     
     def analyze_position_volatility(self, position: Dict[str, Any], 
-                                   timeframe: str = "1h", 
+                                   timeframe: str = "4h", 
                                    lookback_days: int = 30) -> Dict[str, Any]:
         """Analyze volatility for a single position.
         
