@@ -40,7 +40,7 @@ def get_live_price_bybit(symbol="BTC/USDT", sandbox=False):
         print(f"Error fetching live price from Bybit: {e}")
         return None
 
-def get_klines_bybit(symbol="BTC/USDT", timeframe="1h", since=None, limit=1000, sandbox=False):
+def get_klines_bybit(symbol="BTC/USDT", timeframe="4h", since=None, limit=1000, sandbox=False):
     """
     Fetch OHLCV data from Bybit using ccxt.
     
@@ -94,7 +94,7 @@ def get_klines_bybit(symbol="BTC/USDT", timeframe="1h", since=None, limit=1000, 
         print(f"Error fetching data from Bybit: {e}")
         return pd.DataFrame()
 
-def get_multiple_timeframes_bybit(symbol="BTC/USDT", timeframes=["1h"], days_back=120, sandbox=False):
+def get_multiple_timeframes_bybit(symbol="BTC/USDT", timeframes=["4h"], days_back=120, sandbox=False):
     """
     Fetch multiple timeframes for the same symbol from Bybit.
     
@@ -306,7 +306,7 @@ def sl_tp_and_size(entry_price, sigma_H, k=1.2, m=2.0, side="long", R=100.0, tic
 
 # ---------- Enhanced example with multiple symbols ----------
 
-def analyze_multiple_symbols_bybit(symbols=["BTC/USDT", "ETH/USDT"], timeframe="1h", days_back=120, sandbox=False):
+def analyze_multiple_symbols_bybit(symbols=["BTC/USDT", "ETH/USDT"], timeframe="4h", days_back=120, sandbox=False):
     """
     Analyze multiple symbols from Bybit with volatility forecasts and SL/TP calculations.
     """
@@ -396,7 +396,7 @@ if __name__ == "__main__":
     
     # Single symbol analysis
     print("=== Single Symbol Analysis (BTC/USDT) ===")
-    df = get_klines_bybit("BTC/USDT", "1h", 
+    df = get_klines_bybit("BTC/USDT", "4h", 
                          since=dt.datetime.utcnow() - dt.timedelta(days=120),
                          sandbox=USE_SANDBOX)
     
@@ -411,7 +411,7 @@ if __name__ == "__main__":
         # Run analysis
         df["ATR20"] = compute_atr(df, period=20)
         H_hours = 4
-        sigma_ann_har, sigma_H_har = sigma_ann_and_sigma_H_from_har(df["close"], interval="1h", horizon_hours=H_hours)
+        sigma_ann_har, sigma_H_har = sigma_ann_and_sigma_H_from_har(df["close"], interval="4h", horizon_hours=H_hours)
         
         # Get live price for current analysis
         live_price = get_live_price_bybit("BTC/USDT", sandbox=USE_SANDBOX)
@@ -429,7 +429,7 @@ if __name__ == "__main__":
     # Multiple symbols analysis
     print("\n=== Multiple Symbols Analysis ===")
     symbols = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
-    results = analyze_multiple_symbols_bybit(symbols, timeframe="1h", days_back=90, sandbox=USE_SANDBOX)
+    results = analyze_multiple_symbols_bybit(symbols, timeframe="4h", days_back=90, sandbox=USE_SANDBOX)
     
     # Summary table
     print("\n=== Summary Table ===")

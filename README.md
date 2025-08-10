@@ -230,7 +230,7 @@ else:
 
 ```python
 # Timeframe and lookback
-timeframe = "1h"           # Data timeframe
+timeframe = "4h"           # Data timeframe
 lookback_days = 30        # Historical data period
 horizon_hours = 4         # Volatility forecast horizon
 
@@ -251,7 +251,7 @@ from garch_vol_triggers import analyze_multiple_symbols_bybit
 
 # Analyze multiple symbols
 symbols = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
-results = analyze_multiple_symbols_bybit(symbols, timeframe="1h", days_back=90)
+results = analyze_multiple_symbols_bybit(symbols, timeframe="4h", days_back=90)
 ```
 
 ### 3. Individual Symbol Analysis
