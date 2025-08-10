@@ -483,7 +483,7 @@ class PositionRiskManager:
         for pos in self.positions:
             sym = pos['symbol']
             try:
-                df = get_klines_bybit(sym, timeframe='4h', since=dt.datetime.utcnow() - dt.timedelta(days=lookback_days), sandbox=self.sandbox)
+                df = get_klines_bybit(sym, timeframe='4h', since=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=lookback_days), sandbox=self.sandbox)
                 if not df.empty:
                     symbol_to_returns[sym] = np.log(df['close']).diff().dropna()
             except Exception:

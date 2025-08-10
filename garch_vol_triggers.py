@@ -120,7 +120,7 @@ def get_multiple_timeframes_bybit(symbol="BTC/USDT", timeframes=["4h"], days_bac
     
     Returns: dict with timeframe as key, DataFrame as value
     """
-    end_time = dt.datetime.utcnow()
+    end_time = dt.datetime.now(dt.timezone.utc)
     start_time = end_time - dt.timedelta(days=days_back)
     
     data = {}
@@ -422,7 +422,7 @@ def analyze_multiple_symbols_bybit(symbols=["BTC/USDT", "ETH/USDT"], timeframe="
         
         # Get data
         df = get_klines_bybit(symbol, timeframe, 
-                             since=dt.datetime.utcnow() - dt.timedelta(days=days_back),
+                             since=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=days_back),
                              sandbox=sandbox)
         
         if df.empty:
@@ -499,7 +499,7 @@ if __name__ == "__main__":
     # Single symbol analysis
     print("=== Single Symbol Analysis (BTC/USDT) ===")
     df = get_klines_bybit("BTC/USDT", "4h", 
-                         since=dt.datetime.utcnow() - dt.timedelta(days=120),
+                         since=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=120),
                          sandbox=USE_SANDBOX)
     
     if not df.empty:
