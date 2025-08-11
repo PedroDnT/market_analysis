@@ -19,6 +19,8 @@ import datetime as dt
 from typing import Dict, List, Any, Optional
 import pandas as pd
 import numpy as np
+import ccxt
+from dotenv import load_dotenv
 
 try:
     import tomllib
@@ -80,13 +82,30 @@ class PositionRiskManager:
         self.risk_analysis = {}
         self.cfg = load_settings()
         
+        # Centralized exchange object creation
+        load_dotenv()
+        api_key = os.getenv("BYBIT_API_KEY")
+        api_secret = os.getenv("BYBIT_API_SECRET")
+
+        if not api_key or not api_secret:
+            raise ValueError("BYBIT_API_KEY and BYBIT_API_SECRET must be set in .env file")
+
+        self.exchange = ccxt.bybit({
+            'apiKey': api_key,
+            'secret': api_secret,
+            'sandbox': self.sandbox,
+            'options': {
+                'defaultType': 'linear',
+            }
+        })
+
     def fetch_positions(self) -> List[Dict[str, Any]]:
         """Fetch current open positions."""
         print("=" * 80)
         print("Fetching current open positions...")
         print("=" * 80)
         
-        self.positions = fetch_bybit_positions()
+        self.positions = fetch_bybit_positions(self.exchange)
         
         if not self.positions:
             print("No open positions found.")
@@ -116,16 +135,16 @@ class PositionRiskManager:
         print(f"\nAnalyzing {symbol}...")
         
         # Get market info for tick size
-        market_info = get_bybit_market_info(symbol, sandbox=self.sandbox)
+        market_info = get_bybit_market_info(self.exchange, symbol)
         tick_size = market_info['tick_size'] if market_info else 0.00001
         
         # Fetch historical data
         try:
             df = get_klines_bybit(
+                self.exchange,
                 symbol=symbol,
                 timeframe=timeframe,
-                since=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=lookback_days),
-                sandbox=self.sandbox
+                since=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=lookback_days)
             )
             
             if df.empty:
@@ -138,10 +157,10 @@ class PositionRiskManager:
             if len(np.log(df["close"]).diff().dropna()) < 500 and lookback_days < required_days:
                 try:
                     df_garch = get_klines_bybit(
+                        self.exchange,
                         symbol=symbol,
                         timeframe=timeframe,
-                        since=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=required_days),
-                        sandbox=self.sandbox
+                        since=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=required_days)
                     )
                     if not df_garch.empty:
                         df = df_garch
@@ -158,7 +177,7 @@ class PositionRiskManager:
         atr_pct = (atr / entry_price) * 100
         
         # Get current live price
-        live_price = get_live_price_bybit(symbol, sandbox=self.sandbox)
+        live_price = get_live_price_bybit(self.exchange, symbol)
         if live_price is None:
             live_price = float(df["close"].iloc[-1])
         
@@ -573,7 +592,7 @@ class PositionRiskManager:
         for pos in self.positions:
             sym = pos['symbol']
             try:
-                df = get_klines_bybit(sym, timeframe='4h', since=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=lookback_days), sandbox=self.sandbox)
+                df = get_klines_bybit(self.exchange, sym, timeframe='4h', since=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=lookback_days))
                 if not df.empty:
                     symbol_to_returns[sym] = np.log(df['close']).diff().dropna()
             except Exception:
