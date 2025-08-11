@@ -63,6 +63,20 @@ sandbox = false  # Set to true for testnet
 python position_risk_manager.py
 ```
 
+### 🔬 Running Tests
+
+A suite of unit tests is included to verify the core calculation logic. To run the tests:
+
+1.  Ensure you have installed all dependencies, including `pytest`:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+2.  Run the test suite from the project's root directory:
+    ```bash
+    pytest -v
+    ```
+
 ## 🔧 Core Components & Logic Flow
 
 ### 1. Position Risk Manager (`position_risk_manager.py`)
