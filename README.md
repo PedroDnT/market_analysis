@@ -1,6 +1,6 @@
 # Advanced Crypto Position Risk Management System
 
-A comprehensive cryptocurrency trading risk management system that combines real-time position monitoring with advanced volatility analysis using GARCH and HAR-RV models.
+A comprehensive cryptocurrency trading risk management system that combines real-time position monitoring with advanced volatility analysis using GARCH and HAR-RV models, plus portfolio correlation analysis.
 
 ## 🎯 Overview
 
@@ -11,6 +11,8 @@ This system provides sophisticated risk management for cryptocurrency trading by
 - **Dynamic SL/TP Calculation**: Calculates optimal stop-loss and take-profit levels based on volatility
 - **Position Sizing**: Recommends optimal position sizes based on target risk
 - **Portfolio Risk Assessment**: Analyzes overall portfolio risk and provides actionable recommendations
+- **Correlation Analysis**: Identifies correlated positions and applies cluster risk caps
+- **Configuration Management**: Dynamic settings loading with fallback to defaults
 
 ## 📁 Project Structure
 
@@ -20,10 +22,10 @@ market_analysis/
 ├── garch_vol_triggers.py       # GARCH and HAR-RV volatility models
 ├── get_position.py             # Position fetching utilities
 ├── atr_sl_gpt.py              # ATR-based risk management
-├── garch_vol_triggers.py      # Advanced volatility analysis
-├── position_risk_manager.py   # Comprehensive position analysis
 ├── requirements.txt           # Python dependencies
-├── settings.toml             # Configuration file
+├── settings.toml             # Configuration file (create from settings.example.toml)
+├── settings.example.toml     # Example configuration
+├── risk_analysis.json        # Generated risk analysis output
 └── README.md                 # This file
 ```
 
@@ -61,18 +63,33 @@ sandbox = false  # Set to true for testnet
 python position_risk_manager.py
 ```
 
-## 🔧 Core Components
+## 🔧 Core Components & Logic Flow
 
 ### 1. Position Risk Manager (`position_risk_manager.py`)
 
-The main system that analyzes all open positions and provides comprehensive risk management recommendations.
+The main system orchestrates the entire risk analysis workflow:
+
+**Logic Flow:**
+```
+1. Initialize → Load Configuration → Fetch Positions
+2. For each position:
+   a. Analyze volatility (GARCH + HAR-RV + ATR blend)
+   b. Calculate optimal SL/TP levels
+   c. Determine position sizing recommendations
+   d. Assess position health
+3. Calculate portfolio metrics
+4. Apply correlation analysis and cluster risk caps
+5. Generate comprehensive report
+6. Export to JSON
+```
 
 **Key Features:**
-- Fetches real-time positions from Bybit
-- Analyzes volatility using multiple methods (GARCH, HAR-RV, ATR)
-- Calculates optimal SL/TP levels based on volatility
-- Provides position sizing recommendations
-- Generates detailed risk reports
+- **Configuration Loading**: Dynamic settings with fallback to defaults
+- **Multi-Model Volatility**: Blends GARCH, HAR-RV, and ATR for robust estimates
+- **Dynamic Risk Parameters**: Adjusts SL/TP multipliers based on leverage
+- **Portfolio Correlation**: Identifies correlated positions and caps cluster risk
+- **Health Assessment**: Categorizes positions as NORMAL/WARNING/CRITICAL/PROFITABLE
+- **JSON Export**: Saves analysis for external processing
 
 **Output Example:**
 ```
@@ -83,10 +100,11 @@ Current Status:
   Size: 500.0 | Notional: $500.00 | Leverage: 15.0x
 
 Volatility Analysis:
-  Method: HAR-RV
+  Method: VOL_BLEND (GARCH 30% + HAR 40% + ATR 30%)
   ATR(20): $0.014500 (1.46% of price)
   HAR-RV σ(annual): 16.2%
   GARCH σ(annual): 93.3%
+  Blended σ(4h): 2.1%
 
 🎯 Recommended Levels:
   STOP LOSS: $0.985000 (-0.35% from entry)
@@ -98,16 +116,15 @@ Volatility Analysis:
     💰 Current Reward: $1.06
     📊 Risk/Reward: 1.98:1
     ℹ️  POSITION SIZE SMALL: Current is 0.2x optimal
+
+Risk Assessment:
+  Status: 🟢 NORMAL
+  Action: Set SL/TP as recommended
 ```
 
 ### 2. GARCH Volatility Triggers (`garch_vol_triggers.py`)
 
-Advanced volatility analysis using GARCH(1,1) and HAR-RV models for forecasting future volatility.
-
-**Key Functions:**
-- `garch_sigma_ann_and_sigma_H()`: Fits GARCH(1,1) model and forecasts volatility
-- `sigma_ann_and_sigma_H_from_har()`: Uses HAR-RV model for volatility forecasting
-- `sl_tp_and_size()`: Calculates optimal SL/TP levels and position sizes
+Advanced volatility analysis using multiple models:
 
 **Volatility Models:**
 
@@ -115,26 +132,64 @@ Advanced volatility analysis using GARCH(1,1) and HAR-RV models for forecasting 
 - Models volatility clustering and mean reversion
 - Provides short-term volatility forecasts
 - More sensitive to recent market conditions
+- Weight: 30% in blended estimate
 
 #### HAR-RV (Heterogeneous Autoregressive Realized Volatility)
 - Uses realized volatility from different time horizons
 - More stable long-term volatility estimates
 - Better for trend-following strategies
+- Weight: 40% in blended estimate
 
 #### ATR (Average True Range)
 - Simple volatility measure based on price ranges
 - Used as fallback when advanced models fail
 - Good for quick volatility assessment
+- Weight: 30% in blended estimate
 
-### 3. Position Fetching (`get_position.py`)
+**Blending Logic:**
+```python
+# Outlier detection and blending
+if garch_sigma and har_sigma:
+    ratio = garch_sigma / har_sigma
+    if ratio > outlier_threshold:
+        # Use HAR if GARCH is outlier
+        blended_sigma = har_sigma
+    else:
+        # Weighted blend
+        blended_sigma = (w_garch * garch_sigma + 
+                        w_har * har_sigma + 
+                        w_atr * atr_sigma)
+else:
+    # Fallback to ATR
+    blended_sigma = atr_sigma
+```
 
-Utilities for fetching real-time position data from Bybit.
+### 3. Portfolio Correlation Analysis
 
-**Features:**
-- Real-time position data
-- Liquidation price calculations
-- PnL tracking
-- Leverage information
+**New Feature**: Automatically identifies correlated positions and applies risk caps:
+
+```python
+# Correlation clustering algorithm
+1. Fetch 4h returns for all positions (60-day lookback)
+2. Calculate correlation matrix
+3. Group positions with |correlation| ≥ 0.7 into clusters
+4. Cap total cluster risk at 50% of portfolio risk budget
+5. Scale down cluster members proportionally
+```
+
+**Example Output:**
+```
+📊 PORTFOLIO SUMMARY
+----------------------------------------
+Total Positions: 5
+Total Notional: $2,450.33
+Total Unrealized PnL: $45.67
+Total Risk (if all SL hit): $89.23
+Total Reward (if all TP hit): $156.78
+Portfolio Risk/Reward: 1.76:1
+
+⚠️  Positions at Risk: BTC/USDT:USDT, ETH/USDT:USDT
+```
 
 ## 📊 Understanding the Outputs
 
@@ -154,15 +209,17 @@ Size: 500.0 | Notional: $500.00 | Leverage: 15.0x
 
 #### 2. Volatility Analysis
 ```
-Method: HAR-RV
+Method: VOL_BLEND (GARCH 30% + HAR 40% + ATR 30%)
 ATR(20): $0.014500 (1.46% of price)
 HAR-RV σ(annual): 16.2%
 GARCH σ(annual): 93.3%
+Blended σ(4h): 2.1%
 ```
-- **Method**: Primary volatility model used for calculations
+- **Method**: Shows the blending approach used
 - **ATR(20)**: 20-period Average True Range in dollars and percentage
 - **HAR-RV σ**: Annualized volatility from HAR-RV model
 - **GARCH σ**: Annualized volatility from GARCH model
+- **Blended σ**: Final volatility estimate used for calculations
 
 #### 3. Risk Management Levels
 ```
@@ -177,7 +234,7 @@ TAKE PROFIT: $1.030000 (0.69% from entry)
   📊 Risk/Reward: 1.98:1
 ```
 - **SL/TP Levels**: Calculated based on volatility and multipliers
-- **Optimal Risk/Reward**: Based on optimal position size for 2% risk
+- **Optimal Risk/Reward**: Based on optimal position size for target risk
 - **Current Risk/Reward**: Based on actual position size
 - **Risk/Reward Ratio**: Reward divided by risk (target: >1.5:1)
 
@@ -191,10 +248,10 @@ TAKE PROFIT: $1.030000 (0.69% from entry)
 
 The system calculates risk/reward using **optimal position sizing**:
 
-1. **Target Risk**: 2% of position notional
-2. **Volatility Forecast**: Uses GARCH/HAR-RV models
-3. **SL Distance**: `k × σ_H × entry_price` (k = 0.8-1.5 based on leverage)
-4. **TP Distance**: `m × σ_H × entry_price` (m = 1.8-2.5 based on leverage)
+1. **Target Risk**: Configurable (default 2.5% of position notional)
+2. **Volatility Forecast**: Uses blended GARCH/HAR-RV/ATR models
+3. **SL Distance**: `k × σ_H × entry_price` (k = 0.8-1.8 based on leverage)
+4. **TP Distance**: `m × σ_H × entry_price` (m = 1.8-4.0 based on leverage)
 5. **Optimal Size**: `target_risk / sl_distance`
 6. **Risk/Reward**: `tp_distance / sl_distance`
 
@@ -210,32 +267,45 @@ The system compares current vs optimal position sizes:
 
 ### Risk Parameters
 
-```python
-# Leverage-based risk multipliers
-if leverage >= 20:
-    k_sl = 0.8  # Very tight stop for high leverage
-    m_tp = 1.8  # Conservative target
-elif leverage >= 15:
-    k_sl = 1.0
-    m_tp = 2.0
-elif leverage >= 10:
-    k_sl = 1.2
-    m_tp = 2.2
-else:
-    k_sl = 1.5
-    m_tp = 2.5
+```toml
+[risk]
+base_target_pct = 0.025      # Base risk target (2.5%)
+min_target_pct = 0.015       # Minimum risk target (1.5%)
+max_target_pct = 0.040       # Maximum risk target (4.0%)
+use_dynamic = true           # Enable dynamic risk adjustment
+
+[stops]
+# Leverage-based SL multipliers
+k_sl_lev20 = 1.0            # Very tight stop for high leverage
+k_sl_lev15 = 1.2            # Medium leverage
+k_sl_lev10 = 1.5            # Lower leverage
+k_sl_low   = 1.8            # Low leverage
+
+# Leverage-based TP multipliers
+m_tp_lev20 = 2.6            # Conservative target for high leverage
+m_tp_lev15 = 3.0            # Medium leverage
+m_tp_lev10 = 3.5            # Lower leverage
+m_tp_low   = 4.0            # Aggressive target for low leverage
 ```
 
 ### Volatility Analysis Settings
 
-```python
-# Timeframe and lookback
-timeframe = "4h"           # Data timeframe
-lookback_days = 30        # Historical data period
-horizon_hours = 4         # Volatility forecast horizon
+```toml
+[vol]
+blend_w_garch = 0.30        # GARCH weight in blend
+blend_w_har   = 0.40        # HAR-RV weight in blend
+blend_w_atr   = 0.30        # ATR weight in blend
+garch_har_outlier_ratio = 2.0  # Outlier detection threshold
+horizon_hours = 4           # Volatility forecast horizon
+```
 
-# Risk target
-target_risk_pct = 0.02    # 2% of position notional
+### Portfolio Correlation Settings
+
+```toml
+[portfolio]
+corr_lookback_days = 60     # Days for correlation calculation
+corr_threshold = 0.7        # Correlation threshold for clustering
+cluster_risk_cap_pct = 0.5  # Max risk per cluster (% of total)
 ```
 
 ## 📈 Usage Examples
@@ -263,6 +333,15 @@ df = get_klines_bybit("BTC/USDT", "1h", days_back=30)
 sigma_ann, sigma_H, garch_res = garch_sigma_ann_and_sigma_H(df["close"])
 ```
 
+### 4. Configuration Management
+```python
+from position_risk_manager import load_settings
+
+# Load configuration with fallback
+cfg = load_settings("settings.toml")
+risk_target = cfg.get('risk', {}).get('base_target_pct', 0.025)
+```
+
 ## 🔍 Troubleshooting
 
 ### Common Issues
@@ -286,11 +365,16 @@ sigma_ann, sigma_H, garch_res = garch_sigma_ann_and_sigma_H(df["close"])
    - Need sufficient historical data
    - Try different timeframe or longer lookback period
 
+5. **"Configuration not found"**
+   - Copy `settings.example.toml` to `settings.toml`
+   - System will use defaults if no config file exists
+
 ### Performance Tips
 
 - Use `sandbox=True` for testing
 - Reduce `lookback_days` for faster analysis
 - Cache volatility calculations for frequently analyzed symbols
+- Adjust correlation settings for your portfolio size
 
 ## 📚 Technical Details
 
@@ -323,6 +407,20 @@ Optimal_Size = target_risk / SL_distance
 ```
 
 Where `σ_H` is the volatility forecast for the target horizon.
+
+### Correlation Analysis Algorithm
+
+```
+1. Fetch 4h returns for all positions (configurable lookback)
+2. Calculate pairwise correlation matrix
+3. Apply threshold-based clustering:
+   - Start with each symbol as its own cluster
+   - Merge clusters if any member has |corr| ≥ threshold
+4. For each cluster:
+   - Calculate total cluster risk
+   - If cluster risk > cap_pct × total_risk:
+     - Scale down all cluster members proportionally
+```
 
 ## 🤝 Contributing
 
