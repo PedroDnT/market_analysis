@@ -31,37 +31,78 @@ market_analysis/
 
 ## 🚀 Quick Start
 
-### Installation
+There are two ways to run the application: directly via `pip` or using Docker.
+
+### 1. Local Installation & Execution
+
+#### Installation
+
+First, clone the repository and navigate into the directory. It is recommended to use a virtual environment.
 
 ```bash
-# Clone and setup
 git clone <repository>
-cd market_analysis
+cd <repository-folder>
 
-# Create virtual environment
+# Create and activate a virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install the package in editable mode
+pip install -e .
 ```
+Installing with `-e .` makes the `risk-manager` command available on your path and reflects any code changes you make immediately.
 
-### Configuration
+#### Configuration
 
-1. Copy `settings.example.toml` to `settings.toml`
-2. Add your Bybit API credentials:
-```toml
-[bybit]
-api_key = "your_api_key"
-api_secret = "your_api_secret"
-sandbox = false  # Set to true for testnet
-```
+1.  Copy `settings.example.toml` to `settings.toml`.
+2.  Add your Bybit API credentials to `settings.toml`.
+3.  Create a `.env` file in the root directory with your API credentials (this is read by the application):
+    ```
+    BYBIT_API_KEY=your_api_key_here
+    BYBIT_API_SECRET=your_api_secret_here
+    ```
 
-### Run Position Risk Analysis
+#### Running the Application
+
+Once installed, you can run the analysis using the new command-line tool:
 
 ```bash
-python position_risk_manager.py
+risk-manager
 ```
+
+### 2. Docker Execution
+
+Alternatively, you can use Docker to build and run the application in a containerized environment.
+
+#### Building the Image
+
+From the project root directory, build the Docker image:
+```bash
+docker build -t risk-manager-app .
+```
+
+#### Running the Container
+
+Run the application inside a Docker container. You will need to mount your `.env` file and `settings.toml` into the container so it can access your configuration and API keys.
+
+```bash
+docker run --rm -v "$(pwd)/.env":/app/.env -v "$(pwd)/settings.toml":/app/settings.toml risk-manager-app
+```
+The `--rm` flag will automatically remove the container when it exits. The `-v` flags mount your local configuration files into the container at runtime.
+
+### 🔬 Running Tests
+
+A suite of unit tests is included to verify the core calculation logic. To run the tests:
+
+1.  Install the package in editable mode with the optional `test` dependencies:
+    ```bash
+    pip install -e .[test]
+    ```
+
+2.  Run the test suite from the project's root directory:
+    ```bash
+    pytest -v
+    ```
 
 ## 🔧 Core Components & Logic Flow
 
@@ -121,6 +162,44 @@ Risk Assessment:
   Status: 🟢 NORMAL
   Action: Set SL/TP as recommended
 ```
+
+### 🧠 Advanced Risk Logic Explained
+
+Beyond simple volatility metrics, the system employs a multi-layered approach to dynamically adjust risk parameters based on market conditions and trade confidence. This results in more nuanced and context-aware risk management.
+
+#### 1. Confidence Scoring Model
+
+Instead of treating all trade setups equally, the system calculates a **Confidence Score** for each position to quantify the quality of the setup. This score is based on a blend of five distinct factors:
+
+1.  **Trend Strength (EMA Crossover):** Checks if the short-term trend (20-period EMA) is aligned with the position's direction relative to the longer-term trend (50-period EMA). A score is awarded if the trend is favorable.
+2.  **Breakout Confirmation (Donchian Channels):** Determines if the current price has recently broken out of its 20-period price range, providing confirmation for the trade's direction.
+3.  **Volatility Regime:** Compares the short-term volatility (20-period standard deviation of returns) to the longer-term median volatility (100-period). A score is awarded for low-volatility regimes (less noise) and penalized for high-volatility regimes.
+4.  **Price Momentum (RSI Proxy):** Uses a 14-period RSI calculation to gauge momentum. A score is awarded if the RSI is above 50 for long positions or below 50 for short positions.
+5.  **Volatility Model Stability:** Compares the annualized volatility forecasts from the GARCH and HAR-RV models. If the models are in close agreement, it increases confidence. If they diverge significantly, it reduces confidence, indicating market uncertainty.
+
+The final score is clamped between -2 and +5 and directly influences the risk parameters.
+
+#### 2. Dynamic Risk Target Adjustment
+
+The system can dynamically adjust the percentage of capital risked on a trade based on the **Confidence Score**. This allows for taking slightly more risk on high-quality setups and less risk on low-quality ones.
+
+-   The base risk is defined in `settings.toml` (e.g., `base_target_pct = 0.025`).
+-   A multiplier is applied based on the score:
+    -   High Confidence (Score ≥ 4): **1.2x** multiplier (e.g., 3.0% risk)
+    -   Medium Confidence (Score ≥ 2): **1.0x** multiplier (e.g., 2.5% risk)
+    -   Low Confidence (Score ≥ 0): **0.9x** multiplier (e.g., 2.25% risk)
+    -   Negative Confidence (Score < 0): **0.8x** multiplier (e.g., 2.0% risk)
+-   The final risk target is clipped within a professional range (e.g., 2.0% to 3.0%) defined in the configuration.
+
+#### 3. Dynamic Stop-Loss and Take-Profit Multipliers
+
+The multipliers used to set the Stop-Loss (`k`) and Take-Profit (`m`) distances are not static. they are adjusted using a three-factor model to adapt to market conditions:
+
+1.  **Base Multiplier (Leverage):** The initial `k` and `m` values are selected from the configuration based on the position's leverage. Higher leverage results in tighter base multipliers.
+2.  **Volatility Adjustment:** The multipliers are then adjusted based on the current volatility regime (measured by ATR as a percentage of price). In very high-volatility environments, stops are widened to avoid premature stop-outs, while in low-volatility environments, they are tightened.
+3.  **Confidence Adjustment:** Finally, the multipliers are fine-tuned based on the **Confidence Score**. A higher score results in slightly tighter stops and more aggressive profit targets, as the system has more confidence in the trade's direction.
+
+This multi-factor approach ensures that the final SL/TP levels are tailored specifically to the asset's current leverage, volatility, and the quality of the trade setup.
 
 ### 2. GARCH Volatility Triggers (`garch_vol_triggers.py`)
 
