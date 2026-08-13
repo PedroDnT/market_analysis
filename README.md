@@ -137,26 +137,26 @@ The main system orchestrates the entire risk analysis workflow:
 Position 1: EXMPL/USDT:USDT
 ----------------------------------------
 Current Status:
-  Entry: $1.000000 | Current: $1.012000 | PnL: 0.56%
-  Size: 500.0 | Notional: $500.00 | Leverage: 15.0x
+  Entry: $1.000000 | Current: $1.012000 | PnL: 1.20%
+  Size: 500.0 | Notional: $500.00 | Leverage: 10.0x
 
 Volatility Analysis:
   Method: VOL_BLEND (GARCH 30% + HAR 40% + ATR 30%)
-  ATR(20): $0.014500 (1.46% of price)
+  ATR(20): $0.014500 (1.45% of price)
   HAR-RV σ(annual): 16.2%
   GARCH σ(annual): 93.3%
   Blended σ(4h): 2.1%
 
 🎯 Recommended Levels:
-  STOP LOSS: $0.985000 (-0.35% from entry)
-    💰 Optimal Risk: $3.08 (for optimal size: 1200.00)
-    💰 Current Risk: $0.53 (for current size: 500.00)
+  STOP LOSS: $0.985000 (-1.50% from entry)
+    💰 Optimal Risk: $18.00 (for optimal size: 1200.00)
+    💰 Current Risk: $7.50 (for current size: 500.00)
     ✅ Safe from liquidation
-  TAKE PROFIT: $1.030000 (0.69% from entry)
-    💰 Optimal Reward: $6.11
-    💰 Current Reward: $1.06
-    📊 Risk/Reward: 1.98:1
-    ℹ️  POSITION SIZE SMALL: Current is 0.2x optimal
+  TAKE PROFIT: $1.030000 (3.00% from entry)
+    💰 Optimal Reward: $36.00
+    💰 Current Reward: $15.00
+    📊 Risk/Reward: 2.00:1
+    ℹ️  POSITION SIZE SMALL: Current is 0.4x optimal
 
 Risk Assessment:
   Status: 🟢 NORMAL
@@ -276,8 +276,8 @@ Portfolio Risk/Reward: 1.76:1
 
 #### 1. Current Status
 ```
-Entry: $1.000000 | Current: $1.012000 | PnL: 0.56%
-Size: 500.0 | Notional: $500.00 | Leverage: 15.0x
+Entry: $1.000000 | Current: $1.012000 | PnL: 1.20%
+Size: 500.0 | Notional: $500.00 | Leverage: 10.0x
 ```
 - **Entry**: Position entry price
 - **Current**: Live market price
@@ -289,7 +289,7 @@ Size: 500.0 | Notional: $500.00 | Leverage: 15.0x
 #### 2. Volatility Analysis
 ```
 Method: VOL_BLEND (GARCH 30% + HAR 40% + ATR 30%)
-ATR(20): $0.014500 (1.46% of price)
+ATR(20): $0.014500 (1.45% of price)
 HAR-RV σ(annual): 16.2%
 GARCH σ(annual): 93.3%
 Blended σ(4h): 2.1%
@@ -302,15 +302,15 @@ Blended σ(4h): 2.1%
 
 #### 3. Risk Management Levels
 ```
-STOP LOSS: $0.985000 (-0.35% from entry)
-  💰 Optimal Risk: $3.08 (for optimal size: 1200.00)
-  💰 Current Risk: $0.53 (for current size: 500.00)
+STOP LOSS: $0.985000 (-1.50% from entry)
+  💰 Optimal Risk: $18.00 (for optimal size: 1200.00)
+  💰 Current Risk: $7.50 (for current size: 500.00)
   ✅ Safe from liquidation
 
-TAKE PROFIT: $1.030000 (0.69% from entry)
-  💰 Optimal Reward: $6.11
-  💰 Current Reward: $1.06
-  📊 Risk/Reward: 1.98:1
+TAKE PROFIT: $1.030000 (3.00% from entry)
+  💰 Optimal Reward: $36.00
+  💰 Current Reward: $15.00
+  📊 Risk/Reward: 2.00:1
 ```
 - **SL/TP Levels**: Calculated based on volatility and multipliers
 - **Optimal Risk/Reward**: Based on optimal position size for target risk
