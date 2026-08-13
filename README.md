@@ -1,6 +1,10 @@
 # Crypto Position Risk Manager
 
-Analysis-only toolkit for crypto perpetual positions. It pulls live Bybit positions, forecasts volatility with a GARCH / HAR-RV / ATR blend, and recommends stop-loss, take-profit, and size. Nothing is executed.
+Blends GARCH(1,1), HAR-RV and ATR volatility forecasts into leverage-aware stop-loss and take-profit levels and position sizing, with correlation-based cluster risk caps and a confidence-scored dynamic risk target.
+
+Analysis only: it reads live Bybit positions and writes recommendations. Nothing is executed. This repo has no backtest and no out-of-sample validation.
+
+Docker image, GitHub Actions workflow, and three pytest modules are included.
 
 ## Quick start
 
@@ -35,7 +39,7 @@ docker run --rm \
   risk-manager-app
 ```
 
-Tests:
+Tests (three modules under `tests/`):
 
 ```bash
 pip install -e ".[test]"
@@ -56,6 +60,8 @@ market_analysis/
 ├── config.py                   # settings.toml loader
 └── utils.py
 settings.example.toml           # Copy to settings.toml (gitignored)
+.github/workflows/              # CI: run-risk-manager.yml
+tests/                          # Three pytest modules
 ```
 
 Generated `risk_analysis.json` is a local export only; it is gitignored because it contains live account data.
