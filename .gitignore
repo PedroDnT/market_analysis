@@ -56,6 +56,19 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
+# Run outputs — these contain live position, balance and account data.
+# Never commit them: a single export exposes entries, notional, leverage
+# and liquidation prices for every open position.
+risk_analysis.json
+*_analysis.json
+*_analysis.csv
+*_positions.json
+*_report.json
+positions.json
+portfolio.json
+output/
+reports/
+
 # Logs
 *.log
 logs/
